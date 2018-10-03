@@ -1,19 +1,15 @@
-#include <stdio.h>
+#include<stdio.h>
+#include<wchar.h>
 #include<string.h>
 #include "common.h"
 
 
 // setup the input file pointer, Fptr
 void setup_file(){
-    char src[MAX_PATH_LEN];
-    printf("Please input path whose length should < %d:\n", MAX_PATH_LEN);
-    //scanf("%s", src);
-    strcpy(src, "test.txt");
-    while(!(Fptr=fopen(src, "r"))){
-        printf("Cannot open the file %s!\n", src);
-        printf("Please reinput path whose length should < %d:\n", MAX_PATH_LEN);
-        scanf("%s", src);
-    }
+    wchar_t src[MAX_PATH_LEN];
+    wcscpy(src, L"test.txt");
+    if(!(Fptr = _wfopen( src, L"rt+, ccs=UNICODE")))
+        exit(1);
     error = 0;
     ch = ' ';
     return;
@@ -26,11 +22,11 @@ void fetch_char(){
     if(col_ind >= row_len){
         col_ind = 0;
         row_ind++;
-        if(!(fgets(row_val, MAX_ROW_LEN, Fptr))){
+        if(!(fgetws(row_val, MAX_ROW_LEN, Fptr))){
             ch ='\0';
             return;
         }
-        row_len = strlen(row_val);
+        row_len = wcslen(row_val);
     }
     ch = row_val[col_ind++];
     return;
@@ -38,13 +34,13 @@ void fetch_char(){
 
 
 // if a char is A-Za-z
-int is_letter(char ch){
+int is_letter(wchar_t ch){
     return ((ch >= 'a' && ch <= 'z')||(ch >= 'A' && ch <= 'Z'));
 }
 
 
 // if a char is 0-9
-int is_number(char ch){
+int is_number(wchar_t ch){
     return (ch >= '0' && ch <= '9');
 }
 
@@ -61,21 +57,21 @@ void fetch_token(int read_number_type){
     token_len = 0;
     while(ch == ' ' || ch == '\n' || ch == '\n')
         fetch_char();
-    
+
     if(ch == '\0')
         token = token_end;
     // identifer, variable or function name
     else if(is_letter(ch)){
         do{
             if(k < MAX_IDENT_LEN)
-                val_ident[k++] = ch;
+                val_ident[k++] = (char)ch;
             else
                 error_flag = 1;
             fetch_char();
         }while(is_letter(ch) || is_number(ch));
         val_ident[k] = '\0';
         if(error_flag)
-            print_error("Error: Lenth of identify > 10!");
+            print_error("Token-Error: Lenth of identify > 10!");
         token = token_ident;
     }
     // start with 0-9
@@ -92,7 +88,7 @@ void fetch_token(int read_number_type){
                 fetch_char();
             }
             if(error_flag)
-                print_error("Error: read number by const type and number should be 0 or 1!");
+                print_error("Token-Error: read number by const type and number should be 0 or 1!");
         }
         // read number by int value: 0 - MAX_LOGIC_LEN(10)
         else if(read_number_type == 1){
@@ -106,7 +102,7 @@ void fetch_token(int read_number_type){
                 fetch_char();
             }
             if(error_flag)
-                print_error("Error: read number by int type and nonzero number begin with 0!");
+                print_error("Token-Error: read number by int type and nonzero number begin with 0!");
         }
         // read number by bits value: 01001000
         else{
@@ -120,7 +116,7 @@ void fetch_token(int read_number_type){
             }
             len_bits = k;
             if(error_flag)
-                print_error("Error: read number by bits type and number should be only 0 or 1!");
+                print_error("Token-Error: read number by bits type and number should be only 0 or 1!");
         }
     }
     else if(ch == '%'){
@@ -140,32 +136,27 @@ void fetch_token(int read_number_type){
     else if(ch == '#'){
         token = token_pound; fetch_char();
     }
-    else if(ch == '!'){
+    else if(ch == 0x00ac){  //¬
         token = token_neg; fetch_char();
     }
-    else if(ch == '&'){
+    else if(ch == 0x2227){  //∧
         token = token_conjunc; fetch_char();
     }
-    else if(ch == '|'){
+    else if(ch == 0x2228){  //∨
         token = token_disjunc; fetch_char();
     }
-    else if(ch == '-'){
+    else if(ch == 0x2192){  //→
         token = token_implica; fetch_char();
     }
-    else if(ch == '='){
+    else if(ch == 0x2194){  //↔
         token = token_equival; fetch_char();
     }
-    else if(ch == '^'){
+    else if(ch == 0x2295){  //⊕
         token = token_xor; fetch_char();
     }
     // note
     else{
-        //¬ → ↔ ∧ ∨ ⊕
-
-        //0x00ac,0x2192,0x2194,0x2227,0x2228,0x2295
-
-        printf("%d\n", ch); 
-        print_error("Error: Character unexpected!");
+        print_error("Token-Error: Character unexpected!");
         fetch_char();
         fetch_token(read_number_type);
     }

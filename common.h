@@ -3,6 +3,9 @@
 #define MAX_BITS_LEN 1024
 #define MAX_PATH_LEN 512
 #define MAX_ROW_LEN 512
+#define MAX_PCODE_LEN 1024
+#define MAX_VARTAB_LEN 64
+#define MAX_FUNCTAB_LEN 64
 
 typedef enum{
     token_paren_open,   // (
@@ -10,7 +13,7 @@ typedef enum{
     token_comma,        // ,
     token_pound,        // #
 
-    token_neg,          // 
+    token_neg,          //
     token_conjunc,      //
     token_disjunc,      //
     token_implica,      //
@@ -35,11 +38,49 @@ int  val_int;
 int  val_bits[MAX_BITS_LEN];
 int  len_bits;
 char val_ident[MAX_IDENT_LEN + 1];  // max length of ident is 10
-char row_val[MAX_ROW_LEN + 1];      // cur row string value
-char ch;                      // cur char value
+wchar_t row_val[MAX_ROW_LEN + 1];      // cur row string value
+wchar_t  ch;                      // cur char value
 Token token;                        // cur token value
 int  error;
 int  token_len;
+
+
+typedef struct{
+    char* ident,
+    int val,
+} VarTab;
+VarTab varTabs[MAX_VARTAB_LEN];
+
+
+typedef struct{
+    char* ident,
+    int args_count,
+    int* bits
+} FuncTab;
+FuncTab funcTabs[MAX_FUNCTAB_LEN];
+
+
+typedef enum{
+    opt_push_const,
+    opt_push_var,
+    opt_call_func,
+    opt_neg,
+    opt_and,
+    opt_or,
+    opt_xor,
+    opt_equal,
+    opt_refer
+} Opt;
+
+typedef struct{
+    Opt opt,
+    char * ident,
+    int val
+} PCode;
+
+
+int  pcode_len;
+PCode PCodes[MAX_PCODE_LEN];
 
 // function in token.c
 void setup_file();
@@ -49,3 +90,7 @@ void print_token(Token t);
 
 // function in error.c
 void print_error(char* s);
+
+
+//function in syntax.c
+void scan_passage();
