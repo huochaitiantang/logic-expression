@@ -4,10 +4,11 @@
 
 int main(){
     setup_file();
-    do{
+    /*do{
         fetch_token(2);
         print_token(token);
     }while(token != token_end);
-
+    */
+    scan_passage();
     return 0;
 }

@@ -37,26 +37,39 @@ void jump_until(int n, ...){
     <(expression)>
 */
 void factor(){
+    char * tmp;
+    int args_num;
     // const
     if(token == token_const){
         // push_const 0/1
+        printf("PUSH CONST:%d\n", val_const);
+        fetch_token(0);
     }
     // variable or func_call
     else if(token == token_ident){
-        // push_var name
-
-
+        tmp = (char*)malloc(sizeof(val_ident));
+        strcpy(tmp, val_ident);
+        fetch_token(0);
+        // function call
+        if(token == token_paren_open){
+            args_num = function_call();
+            printf("CALL FUNC:%s[args=%d]\n", tmp, args_num);
+        }
+        // variable
+        else{
+            printf("PUSH VAR:%s\n", tmp);
+        }
     }
     //(expression)
     else if(token == token_paren_open){
-        fetch_token();
+        fetch_token(0);
         expression();
         if(token != token_paren_close){
             print_error("Syntax-Error: Paren not matched!");
             jump_until(2, token_pound, token_paren_close);
         }
         if(token == token_paren_close)
-            fetch_token();
+            fetch_token(0);
     }
     else{
         print_error("Syntax-Error: Factor should begin with const, ident or paren_open!");
@@ -69,6 +82,15 @@ void factor(){
     {¬}factor()
 */
 void term(){
+    int i = 0;
+    while(token == token_neg){
+        i++;
+        fetch_token(0);
+    }
+    factor();
+    if(i % 2 == 1){
+        printf("NEG\n");
+    }
     return;
 }
 
@@ -77,7 +99,29 @@ void term(){
     factor(){ ⊕|→|↔|∧|∨ factor()}
 */
 void expression(){
-
+    Token ts[] = {token_conjunc, token_disjunc, token_equival, token_implica, token_xor};
+    Token tmp_token;
+    term();
+    while(inside_tokens(token, ts, 5)){
+        tmp_token = token;
+        fetch_token(0);
+        term();
+        if(tmp_token == token_conjunc){
+            printf("CONJUNC\n");
+        }
+        else if(tmp_token == token_disjunc){
+            printf("DISJUNC\n");
+        }
+        else if(tmp_token == token_equival){
+            printf("EQUIVAL\n");
+        }
+        else if(tmp_token == token_implica){
+            printf("IMPLCA\n");
+        }
+        else{
+            printf("XOR\n");
+        }
+    }
     return;
 }
 
@@ -86,9 +130,9 @@ void expression(){
 */
 void function_declaration(){
     int i;
-    printf("Function-Declaration-Begin");
+    printf("Function-Declaration-Begin\n");
     fetch_token(0);
-    if(token == token_ident){
+    if(token != token_ident){
         print_error("Syntax-Error: Identifier should behind the #!");
         jump_until(1, token_pound);
         return;
@@ -107,17 +151,40 @@ void function_declaration(){
     }
     // write to the symbol table
     //identifier_name, type(1-function), args_count, bits
-    printf("Function-Declaration-Begin");
+    printf("Function-Declaration-End\n");
+    fetch_token(0);
     return;
 }
 
 
 /* function call
     function_name( expression, expression, ...)
+    return number of args
 */
-void function_call(){
-
-    return;
+int function_call(){
+    int args_num = 0;
+    fetch_token(0);
+    // f()
+    if(token == token_paren_close){
+        fetch_token(0);
+        return 0;
+    }
+    while(1){
+        expression();
+        args_num++;
+        if(token == token_paren_close){
+           fetch_token(0);
+           break;
+        }
+        if(token != token_comma){
+            print_error("Syntax-Error: Function args table format error!");
+            jump_until(2,token_comma, token_paren_close);
+        }
+        if(token != token_comma)
+            break;
+        fetch_token(0);
+    }
+    return args_num;
 }
 
 
@@ -126,8 +193,16 @@ void function_call(){
     {function_declaration()}
 */
 void scan_passage(){
-
-
+    fetch_token(0);
+    expression();
+    if(token != token_pound){
+        print_error("Syntax-Error: Unexpected token behind the expression!");
+        jump_until(1, token_pound);
+    }
+    while(token == token_pound){
+        function_declaration();
+    }
+    return;
 }
 
 
