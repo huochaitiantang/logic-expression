@@ -3,15 +3,20 @@
 
 // assign the variable
 void assign_var(int index){
-
-
+    // index >> (varTab_len - 1,....0) & 1
+    int i, j;
+    j = varTab_len - 1;
+    for(i = 0; j >= 0; i++, j--){
+        varTabs[j].val = index & 1;    // get the last bit
+        index = index >> 1 ; //
+    }
     return;
 }
 
 
 // interpret the pcode one by one
 int interpret(){
-    int i, ind, tmp, base, bit_ind;
+    int i, j, ind, tmp, base, bit_ind;
     Opt opt;
     top = 0;
     for(i = 0; i < pcode_len; i++){
@@ -50,14 +55,17 @@ int interpret(){
             case opt_call_func:
                 base = 1;
                 bit_ind = 0;
-                for(i = 0; i < funcTabs[ind].args_count; i++){
+                for(j = 0; j < funcTabs[ind].args_count; j++){
                     tmp = stacks[--top];
                     bit_ind += base * tmp;
-                    base = base << 2;
+                    //printf("Base:%d tmp:%d bit_ind:%d\n", base, tmp, bit_ind);
+                    base = base << 1;
                 }
                 stacks[top++] = funcTabs[ind].bits[bit_ind];
                 break;
         }
+        //printf("TOP: %d: %d\n", top, stacks[top - 1]);
     }
+
     return stacks[--top];
 }
