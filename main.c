@@ -3,7 +3,8 @@
 #include "common.h"
 
 int main(){
-    int i, cnt, res;
+    int i, j, cnt, tmp, all0 = 1, all1 = 1;
+    int* res;
     setup_file();
     /*do{
         fetch_token(2);
@@ -18,12 +19,36 @@ int main(){
     if(error == 0){
         printf("Interpret...\n");
         cnt = (int)pow(2, varTab_len);
+        res = (int*)malloc(sizeof(int) * cnt);
+        for(i = 0; i < varTab_len; i++)
+            printf("%s ", varTabs[i].ident);
+        printf(" Res\n");
         for(i = 0; i < cnt; i++){
             assign_var(i);
-            print_var_tab();
-            res = interpret();
-            printf("Res:%d\n", res);
+            //print_var_tab();
+            tmp = interpret();
+            for(j = 0; j < varTab_len; j++)
+                printf("%d ", varTabs[j].val);
+            printf(" %d\n", tmp);
+            if(tmp == 0) all1 = 0;
+            if(tmp == 1) all0 = 0;
+            res[i] = tmp;
         }
+        if(all0)
+            printf("Always False!");
+        else if(all1)
+            printf("Always True!");
+        /*
+        for(i = 0; i < varTab_len; i++)
+            printf("%s ", varTabs[i].ident);
+        printf(" Res\n");
+        for(i = 0; i < cnt; i++){
+            assign_var(i);
+            for(j = 0; j < varTab_len; j++)
+                printf("%d ", varTabs[j].val);
+            printf(" %d\n", res[i]);
+        }
+        */
     }
     return 0;
 }
