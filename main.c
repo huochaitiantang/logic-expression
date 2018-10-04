@@ -35,9 +35,9 @@ int main(){
             res[i] = tmp;
         }
         if(all0)
-            printf("Always False!");
+            printf("Always False!\n");
         else if(all1)
-            printf("Always True!");
+            printf("Always True!\n");
         /*
         for(i = 0; i < varTab_len; i++)
             printf("%s ", varTabs[i].ident);
@@ -49,6 +49,8 @@ int main(){
             printf(" %d\n", res[i]);
         }
         */
+        tmp = check_complete();
+
     }
     return 0;
 }
