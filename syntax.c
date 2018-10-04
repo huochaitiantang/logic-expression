@@ -1,5 +1,6 @@
 #include<stdio.h>
-#include <stdarg.h>
+#include<stdarg.h>
+#include<math.h>
 #include "common.h"
 
 
@@ -38,11 +39,11 @@ void jump_until(int n, ...){
 */
 void factor(){
     char * tmp;
-    int args_num;
+    int args_num, ind_var, ind_func;
     // const
     if(token == token_const){
         // push_const 0/1
-        printf("PUSH CONST:%d\n", val_const);
+        gen_pcode(opt_push_const, val_const);
         fetch_token(0);
     }
     // variable or func_call
@@ -53,11 +54,35 @@ void factor(){
         // function call
         if(token == token_paren_open){
             args_num = function_call();
-            printf("CALL FUNC:%s[args=%d]\n", tmp, args_num);
+            ind_var = lookup_var_tab(tmp);
+            ind_func = lookup_func_tab(tmp);
+            if(ind_var >= 0){
+                sprintf(error_info, "Semantics-Error: Variable %s cannot be used as function!", tmp);
+                print_error(error_info);
+            }
+            else{
+                if(ind_func < 0)
+                    ind_func = insert_func_tab(tmp, args_num);
+
+                if(funcTabs[ind_func].args_count != args_num){
+                    sprintf(error_info, "Semantics-Error: Function %s args calling are not consistent: %d vs %d !",
+                            tmp, funcTabs[ind_func].args_count, args_num);
+                    print_error(error_info);
+                }
+            }
+            gen_pcode(opt_call_func, ind_func);
         }
         // variable
         else{
-            printf("PUSH VAR:%s\n", tmp);
+            ind_func = lookup_func_tab(tmp);
+            ind_var = lookup_var_tab(tmp);
+            if(ind_func >= 0){
+                sprintf(error_info, "Semantics-Error: Function %s cannot be used as variable!", tmp);
+                print_error(error_info);
+            }
+            else if(ind_var < 0)
+                ind_var = insert_var_tab(tmp);
+            gen_pcode(opt_push_var, ind_var);
         }
     }
     //(expression)
@@ -88,9 +113,8 @@ void term(){
         fetch_token(0);
     }
     factor();
-    if(i % 2 == 1){
-        printf("NEG\n");
-    }
+    if(i % 2 == 1)
+        gen_pcode(opt_neg, 0);
     return;
 }
 
@@ -106,21 +130,16 @@ void expression(){
         tmp_token = token;
         fetch_token(0);
         term();
-        if(tmp_token == token_conjunc){
-            printf("CONJUNC\n");
-        }
-        else if(tmp_token == token_disjunc){
-            printf("DISJUNC\n");
-        }
-        else if(tmp_token == token_equival){
-            printf("EQUIVAL\n");
-        }
-        else if(tmp_token == token_implica){
-            printf("IMPLCA\n");
-        }
-        else{
-            printf("XOR\n");
-        }
+        if(tmp_token == token_conjunc)
+            gen_pcode(opt_conjunc, 0);
+        else if(tmp_token == token_disjunc)
+            gen_pcode(opt_disjunc, 0);
+        else if(tmp_token == token_equival)
+            gen_pcode(opt_equival, 0);
+        else if(tmp_token == token_implica)
+            gen_pcode(opt_implica, 0);
+        else
+            gen_pcode(opt_xor, 0);
     }
     return;
 }
@@ -129,29 +148,53 @@ void expression(){
     # func_name func_args_count bits
 */
 void function_declaration(){
-    int i;
-    printf("Function-Declaration-Begin\n");
+    int tmp_args_cnt, tmp_bits_cnt, ind_var, ind_func;
+    char *tmp;
     fetch_token(0);
     if(token != token_ident){
         print_error("Syntax-Error: Identifier should behind the #!");
         jump_until(1, token_pound);
         return;
     }
+    tmp = (char*)malloc(sizeof(val_ident));
+    strcpy(tmp, val_ident);
     fetch_token(1);
     if(token != token_int){
         print_error("Syntax-Error: args number should behind the function name!");
         jump_until(1, token_pound);
         return;
     }
+    tmp_args_cnt = val_int;
     fetch_token(2);
     if(token != token_bits){
         print_error("Syntax-Error: bits number should behind the function args number!");
         jump_until(1, token_pound);
         return;
     }
-    // write to the symbol table
-    //identifier_name, type(1-function), args_count, bits
-    printf("Function-Declaration-End\n");
+    tmp_bits_cnt = (int)pow(2, tmp_args_cnt);
+    if(tmp_bits_cnt != len_bits){
+        sprintf(error_info, "Semantics-Error: Function %s bits define wrong, require %d but given %d !",
+                 tmp, tmp_bits_cnt, len_bits);
+        print_error(error_info);
+    }
+    ind_var = lookup_var_tab(tmp);
+    if(ind_var >= 0){
+        sprintf(error_info, "Semantics-Error: Variable %s cannot be defined as function!", tmp);
+        print_error(error_info);
+    }
+    else{
+        ind_func = lookup_func_tab(tmp);
+        if(ind_func < 0){
+            printf("Warning: Function %s defined but not be used!\n", tmp);
+            ind_func = insert_func_tab(tmp, tmp_args_cnt);
+        }
+        if(tmp_args_cnt != funcTabs[ind_func].args_count){
+            sprintf(error_info, "Semantics-Error: Function %s args define wrong, calling %d but defining %d!",
+                     tmp, funcTabs[ind_func].args_count, tmp_args_cnt);
+            print_error(error_info);
+        }
+        complete_func_tab(ind_func, val_bits, len_bits);
+    }
     fetch_token(0);
     return;
 }
@@ -204,25 +247,3 @@ void scan_passage(){
     }
     return;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

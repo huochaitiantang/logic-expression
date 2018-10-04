@@ -110,12 +110,16 @@ void fetch_token(int read_number_type){
             while(is_number(ch)){
                 if(ch != '0' && ch != '1')
                     error_flag = 1;
-                else
+                else if(k < MAX_BITS_LEN)
                     val_bits[k++] = ch - '0';
+                else
+                    error_flag = 2;
                 fetch_char();
             }
             len_bits = k;
-            if(error_flag)
+            if(error_flag == 2)
+                print_error("Token-Error: bits len out of max!");
+            if(error_flag == 1)
                 print_error("Token-Error: read number by bits type and number should be only 0 or 1!");
         }
     }

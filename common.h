@@ -6,6 +6,7 @@
 #define MAX_PCODE_LEN 1024
 #define MAX_VARTAB_LEN 64
 #define MAX_FUNCTAB_LEN 64
+#define MAX_STACK_LEN 512
 
 typedef enum{
     token_paren_open,   // (
@@ -44,6 +45,7 @@ wchar_t  ch;        // cur char value
 Token token;        // cur token value
 int  token_len;     // token lenth
 int  error;         // error num
+char error_info[1024];
 
 
 typedef struct{
@@ -57,6 +59,7 @@ VarTab varTabs[MAX_VARTAB_LEN]; // Variable Tables
 typedef struct{
     char* ident;
     int args_count;
+    int bits_count;
     int* bits;
 } FuncTab;
 int funcTab_len;
@@ -79,9 +82,11 @@ typedef struct{
     int ind;            // option number
 } PCode;
 int  pcode_len;
-PCode PCodes[MAX_PCODE_LEN];
+PCode pcodes[MAX_PCODE_LEN];
 
 
+int stacks[MAX_STACK_LEN];
+int top;
 
 
 // function in token.c
@@ -95,3 +100,17 @@ void print_error(char* s);
 
 //function in syntax.c
 void scan_passage();
+
+// function in semantics.c
+int lookup_var_tab(char* ident);
+int lookup_func_tab(char* ident);
+int insert_var_tab(char* ident);
+int insert_func_tab(char* ident, int args_num);
+void gen_pcode(Opt opt, int ind);
+void print_var_tab();
+void print_func_tab();
+void print_pcodes();
+
+// function in interpret.c
+void assign_var(int index);
+int interpret();
