@@ -16,6 +16,7 @@ int main(){
     print_func_tab();
     print_pcodes();
     printf("Error: %d\n", error);
+    check_undefined();
     if(error == 0){
         printf("Interpret...\n");
         cnt = (int)pow(2, varTab_len);

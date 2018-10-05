@@ -14,6 +14,22 @@ void assign_var(int index){
 }
 
 
+// check if some function not defined
+void check_undefined(){
+    int i;
+    for(i = 0; i < pcode_len; i++){
+        if(pcodes[i].opt == opt_call_func){
+            if(funcTabs[pcodes[i].ind].bits == NULL){
+                sprintf(error_info, "Semantics-Error: Undefined function: %s",
+                     funcTabs[pcodes[i].ind].ident);
+                print_error(error_info);
+            }
+        }
+    }
+}
+
+
+
 // interpret the pcode one by one
 int interpret(){
     int i, j, ind, tmp, base, bit_ind;
@@ -61,6 +77,7 @@ int interpret(){
                     //printf("Base:%d tmp:%d bit_ind:%d\n", base, tmp, bit_ind);
                     base = base << 1;
                 }
+
                 stacks[top++] = funcTabs[ind].bits[bit_ind];
                 break;
         }

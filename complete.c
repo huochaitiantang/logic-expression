@@ -26,7 +26,96 @@ void print_combina(unsigned long* combina, long long combina_len, int bit_len){
         }
         for(j = 0; j < bit_len; j++)
             printf("%d", tmp_array[j]);
-        printf("\n");
+        printf(" [%d] [%d]\n", i, combina[i]);
+    }
+    return;
+}
+
+
+// fac
+int fac(int n){
+    if(n == 1) return 1;
+    return n * fac(n - 1);
+}
+
+
+
+
+// calculate combine
+int combine_cnt(int n, int m){
+    int i,sum=1;
+    for(i = m + 1; i <= n; i++)
+        sum = sum * i;
+    sum = sum / fac(n - m);
+    return sum;
+}
+
+
+// calculate C(n,m)
+void C_n_m(int n, int m, int* res){
+    int *p;
+    int j, k = 0, ind;
+    p = (int*)malloc(sizeof(int)*m);
+    ind = 0;
+    p[ind] = 0;
+    while(1){
+        if(p[ind] >= n){
+            if(ind == 0) break;
+            ind--;
+            p[ind]++;
+        }
+        else if(ind == m - 1){
+            // one result c(n,m)
+            for(j = 0; j < m; j++){
+                res[k++] = p[j];
+            }
+            p[ind]++;
+        }
+        else{
+            ind++;
+            p[ind]=p[ind-1]+1;
+        }
+    }
+    free(p);
+    return;
+}
+
+
+// calculate A(n,n)
+void A_n_n(int n, int * res){
+    int i, j, k = 0, tmp;
+    int* p;
+    p=(int*)malloc(sizeof(int)*n);
+    for(i = 0; i < n; i++) p[i] = i;
+    while(1){
+        for(i = 0; i < n; i++)
+            res[k++] = p[i];
+        for(i = n - 1; i > 0 && p[i] < p[i - 1]; i--);
+        if(i==0) break;
+        for(j = n-1; j > i && p[j] < p[i - 1]; j--);
+        tmp = p[i - 1];
+        p[i - 1] = p[j];
+        p[j]=tmp;
+        for(i = i, j = n - 1; i < j; i++, j--){
+            tmp=p[i];
+            p[i]=p[j];
+            p[j]=tmp;
+        }
+    }
+    return;
+}
+
+
+// number(10) to number(n)(m bit)
+int to_base_n(int number, int n, int m, int * res){
+    int i;
+    for(i = 0; i < m ; i++)
+        res[i] = 0;
+    for(i = m - 1; i >= 0; i--){
+        res[i] = number % n;
+        number = number / n;
+        if(number <= 0)
+            break;
     }
     return;
 }
@@ -34,8 +123,12 @@ void print_combina(unsigned long* combina, long long combina_len, int bit_len){
 
 // check complete by violence
 int check_complete(){
-    int i, j, k, tmp, base, val, complete=0;
+    int i, j, k, l, n, m;
+    float cnt;
+    int tmp, base, val, ind, complete=0;
     int max_args, max_bits_len;
+    int * p;
+    int * q;
     long long max_combina;
     unsigned char* flag;
     unsigned long* combina;
@@ -78,13 +171,57 @@ int check_complete(){
             }
             tmp = 0;  // if new add to the set
             for(i = 0; i < funcTab_len; i++){
-                // choice args_num val in the combina
+                // choice args_num val in the combina: C(n, m)
+                n = combina_len;
+                m = funcTabs[i].args_count;
+                cnt = pow(n, m);
+                p = (int *)malloc(sizeof(int) * m);
+                q = (int *)malloc(sizeof(int) * max_bits_len);
+                for(j = 0; j < cnt; j++){
+                    to_base_n(j, n, m, p);
+                    for(k = 0; k < max_bits_len; k++)
+                        q[k] = 0;
+                    printf("%d: \n", j);
 
+                    // combina is
+                    // 00000000
+                    // 11111111
+                    // 01010101
+                    // 00110011
+                    // 00001111
+                    // p[k] is the choose index in the combina, exp 2, 3, 4
+                    // val is
+                    //      01010101(85) base=4
+                    //      00110011(51) base=2
+                    //      00001111(15) base=1
+                    // q is 04261537
+                    print_combina(combina, combina_len, max_bits_len);
+                    for(k = m - 1, base = 1; k >= 0; k--){
+                        val = combina[p[k]];
+                        printf("choose: [%d] [%d] \n", p[k], val);
+                        for(l = max_bits_len - 1; l >= 0; l--){
+                            q[l] = q[l] + (val & 1) * base;
+                            val = val >> 1;
+                        }
+                        base = base << 1;
+                    }
+                    for(k = 0; k < max_bits_len; k++)
+                            printf("%d ", q[k]);
+                    base = 1;
+                    val = 0;
                     // calculate by the function defined
-
-
-                    break;
-
+                    for(k = max_bits_len - 1; k >= 0; k--){
+                        val = val + base * funcTabs[i].bits[q[k]];
+                        base = base << 1;
+                    }
+                    // add to the combina array
+                    if(flag[val] == 0){
+                        combina[combina_len++] = val;
+                        flag[val] = 1;
+                        tmp = 1;
+                    }
+                    printf("\n");
+                }
             }
             if(tmp == 0) break;
         }
@@ -94,6 +231,7 @@ int check_complete(){
         else{
             printf("Combination set:\n");
             print_combina(combina, combina_len, max_bits_len);
+            printf("Not Complete\n");
         }
 
     }
@@ -104,3 +242,6 @@ int check_complete(){
 
 
 }
+
+
+
