@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<math.h>
 #include<string.h>
+#include<wchar.h>
 #include "common.h"
 
 
