@@ -116,4 +116,4 @@ void assign_var(int index);
 int interpret();
 
 // function in complete.c
-int check_complete();
+void check_complete();
