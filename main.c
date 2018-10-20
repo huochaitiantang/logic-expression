@@ -16,9 +16,9 @@ int main(){
     }while(token != token_end);
     */
     scan_passage();
-    //print_var_tab();
-    //print_func_tab();
-    //print_pcodes();
+    print_var_tab();
+	print_func_tab();
+    print_pcodes();
     if(error > 0)
         printf("Error: %d\n", error);
     check_undefined();
@@ -104,7 +104,7 @@ void fetch_token(int read_number_type){
     int k = 0;
     int error_flag = 0;
     token_len = 0;
-    while(ch == ' ' || ch == '\n' || ch == '\n')
+    while(ch == ' ' || ch == '\n' || ch == '\t')
         fetch_char();
 
     if(ch == '\0')
@@ -209,6 +209,7 @@ void fetch_token(int read_number_type){
     }
     // note
     else{
+    	printf("val: %x\n", ch);
         print_error("Token-Error: Character unexpected!");
         fetch_char();
         fetch_token(read_number_type);
@@ -466,10 +467,10 @@ int function_call(){
 void scan_passage(){
     fetch_token(0);
     expression();
-    if(token != token_pound){
+    /*if(token != token_pound){
         print_error("Syntax-Error: Unexpected token behind the expression!");
         jump_until(1, token_pound);
-    }
+    }*/
     while(token == token_pound){
         function_declaration();
     }
