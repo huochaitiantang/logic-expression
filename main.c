@@ -16,41 +16,43 @@ int main(){
     }while(token != token_end);
     */
     scan_passage();
-    print_var_tab();
-	print_func_tab();
-    print_pcodes();
+    //print_var_tab();
+	//print_func_tab();
+    //print_pcodes();
+    check_undefined();
     if(error > 0)
         printf("Error: %d\n", error);
-    check_undefined();
     if(error == 0){
-        //printf("Interpret...\n");
-        cnt = (int)pow(2, varTab_len);
-        res = (int*)malloc(sizeof(int) * cnt);
-        for(i = 0; i < cnt; i++){
-            assign_var(i);
-            tmp = interpret();
-            if(tmp == 0) all1 = 0;
-            if(tmp == 1) all0 = 0;
-            res[i] = tmp;
-        }
-        if(all0)
-            printf("--Always False!\n");
-        else if(all1)
-            printf("--Always True!\n");
-        else{
-            printf("--Not Always True or Always False!\n");
-            for(i = 0; i < varTab_len; i++)
-                printf("%s ", varTabs[i].ident);
-            printf(" Res\n");
-            for(i = 0; i < cnt; i++){
-                assign_var(i);
-                for(j = 0; j < varTab_len; j++)
-                    printf("%d ", varTabs[j].val);
-                printf(" %d\n", res[i]);
-            }
-        }
-
-        check_complete();
+    	if(pcode_len > 0){
+	        //printf("Interpret...\n");
+	        cnt = (int)pow(2, varTab_len);
+	        res = (int*)malloc(sizeof(int) * cnt);
+	        for(i = 0; i < cnt; i++){
+	            assign_var(i);
+	            tmp = interpret();
+	            if(tmp == 0) all1 = 0;
+	            if(tmp == 1) all0 = 0;
+	            res[i] = tmp;
+	        }
+	        if(all0)
+	            printf("--Always False!\n");
+	        else if(all1)
+	            printf("--Always True!\n");
+	        else{
+	            printf("--Not Always True or Always False!\n");
+	            for(i = 0; i < varTab_len; i++)
+	                printf("%s ", varTabs[i].ident);
+	            printf(" Res\n");
+	            for(i = 0; i < cnt; i++){
+	                assign_var(i);
+	                for(j = 0; j < varTab_len; j++)
+	                    printf("%d ", varTabs[j].val);
+	                printf(" %d\n", res[i]);
+	            }
+	        }
+		}
+		if(funcTab_len > 0)
+        	check_complete();
 
     }
     return 0;
@@ -318,27 +320,26 @@ void factor(){
             gen_pcode(opt_push_var, ind_var);
         }
     }
-    //(expression)
+    //(expression) 
     else if(token == token_paren_open){
         fetch_token(0);
         expression();
         if(token != token_paren_close){
             print_error("Syntax-Error: Paren not matched!");
-            jump_until(2, token_pound, token_paren_close);
+            jump_until(3, token_pound, token_paren_close, token_end);
         }
         if(token == token_paren_close)
             fetch_token(0);
     }
-    else{
+    else if(token != token_pound){
         print_error("Syntax-Error: Factor should begin with const, ident or paren_open!");
     }
     return;
 }
 
-/* term syntax analysis, priority of ¬ > others
-    {¬}factor()
-*/
-void term(){
+// priority: neg > conjunc > disjunc > xor > implica > equival 
+//	term_neg syntax analysis: {neg} factor()
+void term_neg(){
     int i = 0;
     while(token == token_neg){
         i++;
@@ -350,83 +351,115 @@ void term(){
     return;
 }
 
-/* expression syntax analysis
-    factor(){ ⊕|→|↔|∧|∨ factor()}
-*/
+// term_conjunc syntax analysis: term_neg(){ conjunc term_neg()}
+void term_conjunc(){
+	term_neg();
+	while(token == token_conjunc){
+		fetch_token(0);
+		term_neg();
+		gen_pcode(opt_conjunc, 0);
+	}
+	return;
+}
+
+// term_disjunc syntax analysis: term_conjunc(){ disjunc term_conjunc()}
+void term_disjunc(){
+	term_conjunc();
+	while(token == token_disjunc){
+		fetch_token(0);
+		term_conjunc();
+		gen_pcode(opt_disjunc, 0);
+	}
+	return;
+}
+
+// term_xor syntax analysis: term_disjunc(){ xor term_disjunc()}
+void term_xor(){
+	term_disjunc();
+	while(token == token_xor){
+		fetch_token(0);
+		term_disjunc();
+		gen_pcode(opt_xor, 0);
+	}
+	return;
+}
+
+// term_implica syntax analysis: term_xor(){ implica term_xor()}
+void term_implica(){
+	term_xor();
+	while(token == token_implica){
+		fetch_token(0);
+		term_xor();
+		gen_pcode(opt_implica, 0);
+	}
+	return;
+}
+
+// expression syntax analysis: term_implica(){ equival term_implica}
 void expression(){
-    Token ts[] = {token_conjunc, token_disjunc, token_equival, token_implica, token_xor};
-    Token tmp_token;
-    term();
-    while(inside_tokens(token, ts, 5)){
-        tmp_token = token;
-        fetch_token(0);
-        term();
-        if(tmp_token == token_conjunc)
-            gen_pcode(opt_conjunc, 0);
-        else if(tmp_token == token_disjunc)
-            gen_pcode(opt_disjunc, 0);
-        else if(tmp_token == token_equival)
-            gen_pcode(opt_equival, 0);
-        else if(tmp_token == token_implica)
-            gen_pcode(opt_implica, 0);
-        else
-            gen_pcode(opt_xor, 0);
-    }
-    return;
+	term_implica();
+	while(token == token_equival){
+		fetch_token(0);
+		term_implica();
+		gen_pcode(opt_equival, 0);
+	}
+	return;
 }
 
 /* declare function
-    # func_name func_args_count bits
+    # func_name func_args_count bits {func_name func_args_count bits}
 */
 void function_declaration(){
     int tmp_args_cnt, tmp_bits_cnt, ind_var, ind_func;
     char *tmp;
     fetch_token(0);
-    if(token != token_ident){
-        print_error("Syntax-Error: Identifier should behind the #!");
-        jump_until(1, token_pound);
-        return;
-    }
-    tmp = (char*)malloc(sizeof(val_ident));
-    strcpy(tmp, val_ident);
-    fetch_token(1);
-    if(token != token_int){
-        print_error("Syntax-Error: args number should behind the function name!");
-        jump_until(1, token_pound);
-        return;
-    }
-    tmp_args_cnt = val_int;
-    fetch_token(2);
-    if(token != token_bits){
-        print_error("Syntax-Error: bits number should behind the function args number!");
-        jump_until(1, token_pound);
-        return;
-    }
-    tmp_bits_cnt = (int)pow(2, tmp_args_cnt);
-    if(tmp_bits_cnt != len_bits){
-        sprintf(error_info, "Semantics-Error: Function %s bits define wrong, require %d but given %d !",
-                 tmp, tmp_bits_cnt, len_bits);
-        print_error(error_info);
-    }
-    ind_var = lookup_var_tab(tmp);
-    if(ind_var >= 0){
-        sprintf(error_info, "Semantics-Error: Variable %s cannot be defined as function!", tmp);
-        print_error(error_info);
-    }
-    else{
-        ind_func = lookup_func_tab(tmp);
-        if(ind_func < 0){
-            printf("Warning: Function %s defined but not be used!\n", tmp);
-            ind_func = insert_func_tab(tmp, tmp_args_cnt);
-        }
-        if(tmp_args_cnt != funcTabs[ind_func].args_count){
-            sprintf(error_info, "Semantics-Error: Function %s args define wrong, calling %d but defining %d!",
-                     tmp, funcTabs[ind_func].args_count, tmp_args_cnt);
-            print_error(error_info);
-        }
-        complete_func_tab(ind_func, val_bits, len_bits);
-    }
-    fetch_token(0);
+    while(token != token_end){
+	    if(token != token_ident){
+	        print_error("Syntax-Error: Identifier should begin with ident!");
+	        jump_until(2, token_end, token_ident);
+	        continue;
+	    }
+	    tmp = (char*)malloc(sizeof(val_ident));
+	    strcpy(tmp, val_ident);
+	    fetch_token(1);
+	    if(token != token_int){
+	        print_error("Syntax-Error: args number should behind the function name!");
+	        jump_until(2, token_end, token_ident);
+	        continue;
+	    }
+	    tmp_args_cnt = val_int;
+	    fetch_token(2);
+	    if(token != token_bits){
+	        print_error("Syntax-Error: bits number should behind the function args number!");
+	        jump_until(2, token_end, token_ident);
+	        continue;
+	    }
+	    tmp_bits_cnt = (int)pow(2, tmp_args_cnt);
+	    if(tmp_bits_cnt != len_bits){
+	        sprintf(error_info, "Semantics-Error: Function %s bits define wrong, require %d but given %d !",
+	                 tmp, tmp_bits_cnt, len_bits);
+	        print_error(error_info);
+	    }
+	    ind_var = lookup_var_tab(tmp);
+	    if(ind_var >= 0){
+	        sprintf(error_info, "Semantics-Error: Variable %s cannot be defined as function!", tmp);
+	        print_error(error_info);
+	    }
+	    else{
+	        ind_func = lookup_func_tab(tmp);
+	        if(ind_func < 0){
+	            printf("Warning: Function %s defined but not be used!\n", tmp);
+	            ind_func = insert_func_tab(tmp, tmp_args_cnt);
+	        }
+	        if(tmp_args_cnt != funcTabs[ind_func].args_count){
+	            sprintf(error_info, "Semantics-Error: Function %s args define wrong, calling %d but defining %d!",
+	                     tmp, funcTabs[ind_func].args_count, tmp_args_cnt);
+	            print_error(error_info);
+	        }
+	        complete_func_tab(ind_func, val_bits, len_bits);
+	    }
+	    fetch_token(0);
+	}
     return;
 }
 
@@ -451,7 +484,7 @@ int function_call(){
         }
         if(token != token_comma){
             print_error("Syntax-Error: Function args table format error!");
-            jump_until(2,token_comma, token_paren_close);
+            jump_until(4, token_comma, token_paren_close, token_pound, token_end);
         }
         if(token != token_comma)
             break;
@@ -471,6 +504,9 @@ void scan_passage(){
         print_error("Syntax-Error: Unexpected token behind the expression!");
         jump_until(1, token_pound);
     }*/
+    if((token != token_end) && (token != token_pound)){
+    	print_error("Syntax-Error: redundant structure between expression tail and function define head!");
+    }
     while(token == token_pound){
         function_declaration();
     }
