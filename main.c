@@ -798,8 +798,8 @@ void check_complete(){
                 to_base_n(j, n, m, base_n);
                 // decrease repeat calculate,
                 // only attention new res added last time
-                if(all_less(base_n, m, pre_comp_ptr))
-                    continue;
+                if(m > 0 && all_less(base_n, m, pre_comp_ptr))
+                   continue;
                 //  comp(n = 2): 0011,0101
                 //  chose(m = 3, base_n = 011): 0011,0101,0101
                 //  res_ind = 0347(000,011,100,111)
@@ -814,6 +814,7 @@ void check_complete(){
                     base = base << 1;
                 }
                 // res = func.bits[0],func.bits[3],func.bits[4],func.bits[7] = 0110 = 6
+                // if m == 0, res_ind = 0000
                 for(k = 3, base = 1, res = 0; k >= 0; k--){
                     res += (base * funcTabs[i].bits[res_ind[k]]);
                     base = base << 1;
