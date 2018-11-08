@@ -115,5 +115,80 @@ void print_pcodes();
 void assign_var(int index);
 int interpret();
 
-// function in complete.c
-void check_complete();
+// print the FuncTabs
+void print_func_tab(){
+    int i, j, args_cnt, bits_cnt;
+    printf("-----------funcTabs------------\n");
+    for(i = 0; i < funcTab_len; i++){
+        args_cnt = funcTabs[i].args_count;
+        bits_cnt = funcTabs[i].bits_count;
+        printf("%d %s %d ", i, funcTabs[i].ident, args_cnt);
+        for(j = 0; j < bits_cnt; j++)
+            printf("%d", funcTabs[i].bits[j]);
+        printf("\n");
+    }
+    printf("-------------------------------\n");
+    return;
+}
+
+// functions for complete
+// get max args num in the funcTabs
+int max_args_num(){
+    int i, tmp = 0;
+    for(i = 0; i < funcTab_len; i++)
+        if(funcTabs[i].args_count > tmp)
+            tmp = funcTabs[i].args_count;
+    return tmp;
+}
+
+// number(10) to number(n)(m bit)
+int to_base_n(int number, int n, int m, int * res){
+    int i;
+    for(i = 0; i < m ; i++)
+        res[i] = 0;
+    for(i = m - 1; i >= 0; i--){
+        res[i] = number % n;
+        number = number / n;
+        if(number <= 0)
+            break;
+    }
+    return;
+}
+
+// check if all number in p < base if base > 0
+int all_less(int* p, int m, int base){
+    int i;
+    for(i = 0; i < m; i++)
+        if(p[i] >= base)
+            return 0;
+    return 1;
+}
+
+void print_base2(int n){
+    int i;
+    int tmp_array[4];
+    if(n <0 || n >= 16){
+        printf("Error!");
+        return;
+    }
+    for(i = 3; i >= 0; i--){
+        tmp_array[i] = n & 1;
+        n = n >> 1;
+    }
+    for(i = 0; i < 4; i++)
+        printf("%d",tmp_array[i]);
+}
+
+// print array
+void print_comp(int comp[], int n){
+    int i;
+    for(i = 0; i < n; i++){
+        print_base2(comp[i]);
+        printf(" [%d] [%d]\n", i, comp[i]);
+    }
+    return;
+}
+
+
+
+

@@ -55,6 +55,8 @@ int main(){
         	check_complete();
 
     }
+    printf("Press Enter for quit...\n");
+    getchar(); 
     return 0;
 }
 
@@ -586,21 +588,7 @@ void print_var_tab(){
     return;
 }
 
-// print the FuncTabs
-void print_func_tab(){
-    int i, j, args_cnt, bits_cnt;
-    printf("-----------funcTabs------------\n");
-    for(i = 0; i < funcTab_len; i++){
-        args_cnt = funcTabs[i].args_count;
-        bits_cnt = funcTabs[i].bits_count;
-        printf("%d %s %d ", i, funcTabs[i].ident, args_cnt);
-        for(j = 0; j < bits_cnt; j++)
-            printf("%d", funcTabs[i].bits[j]);
-        printf("\n");
-    }
-    printf("-------------------------------\n");
-    return;
-}
+
 
 // print the PCodes
 void print_pcodes(){
@@ -703,66 +691,8 @@ int interpret(){
     return stacks[--top];
 }
 
-// functions for complete
-// get max args num in the funcTabs
-int max_args_num(){
-    int i, tmp = 0;
-    for(i = 0; i < funcTab_len; i++)
-        if(funcTabs[i].args_count > tmp)
-            tmp = funcTabs[i].args_count;
-    return tmp;
-}
-
-// number(10) to number(n)(m bit)
-int to_base_n(int number, int n, int m, int * res){
-    int i;
-    for(i = 0; i < m ; i++)
-        res[i] = 0;
-    for(i = m - 1; i >= 0; i--){
-        res[i] = number % n;
-        number = number / n;
-        if(number <= 0)
-            break;
-    }
-    return;
-}
-
-// check if all number in p < base if base > 0
-int all_less(int* p, int m, int base){
-    int i;
-    for(i = 0; i < m; i++)
-        if(p[i] >= base)
-            return 0;
-    return 1;
-}
-
-void print_base2(int n){
-    int i;
-    int tmp_array[4];
-    if(n <0 || n >= 16){
-        printf("Error!");
-        return;
-    }
-    for(i = 3; i >= 0; i--){
-        tmp_array[i] = n & 1;
-        n = n >> 1;
-    }
-    for(i = 0; i < 4; i++)
-        printf("%d",tmp_array[i]);
-}
-
-// print array
-void print_comp(int comp[], int n){
-    int i;
-    for(i = 0; i < n; i++){
-        print_base2(comp[i]);
-        printf(" [%d] [%d]\n", i, comp[i]);
-    }
-    return;
-}
-
 // check complete by violence
-void check_complete(){
+int check_complete(){
     int i,j,k,l,m,n;
     int flag[16];
     int comp[16];
@@ -864,13 +794,9 @@ void check_complete(){
             break;
     }
     //print_comp(comp, comp_ptr);
-    if(comp_ptr >= 16){
-        printf("--Complete!\n");
-    }
-    else{
-        printf("--Not Complete!\n");
-    }
-    for(i = 0; i < comp_ptr; i++){
+    if(comp_ptr >= 16) printf("--Complete!\n");
+    else printf("--Not Complete!\n");
+	for(i = 0; i < comp_ptr; i++){
         printf("[%d] ",i);
         print_base2(comp[i]);
         printf(" %s\n", formula_str[i]);
@@ -879,35 +805,8 @@ void check_complete(){
     for(i = 0; i < comp_ptr; i++){
         free(formula_str[i]);
     }
-}
-
-// calculate C(n,m), not used
-void C_n_m(int n, int m, int* res){
-    int *p;
-    int j, k = 0, ind;
-    p = (int*)malloc(sizeof(int)*m);
-    ind = 0;
-    p[ind] = 0;
-    while(1){
-        if(p[ind] >= n){
-            if(ind == 0) break;
-            ind--;
-            p[ind]++;
-        }
-        else if(ind == m - 1){
-            // one result c(n,m)
-            for(j = 0; j < m; j++){
-                res[k++] = p[j];
-            }
-            p[ind]++;
-        }
-        else{
-            ind++;
-            p[ind]=p[ind-1]+1;
-        }
-    }
-    free(p);
-    return;
+    if(comp_ptr >= 16) return 1;
+    else return 0;
 }
 
 // calculate A(n,n), not used
