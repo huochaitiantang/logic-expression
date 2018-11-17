@@ -2,6 +2,7 @@
 #include<string.h>
 #include<math.h>
 #include<time.h>
+#include<stdlib.h>
 
 typedef struct{
     char* ident;
@@ -16,7 +17,7 @@ typedef struct{
 } Complete;
 
 // number(10) to number(n)(m bit)
-int to_base_n(int number, int n, int m, int * res){
+void to_base_n(int number, int n, int m, int * res){
     int i;
     for(i = 0; i < m ; i++)
         res[i] = 0;
@@ -173,7 +174,7 @@ int check_complete(FuncTab* cands, int cands_len, int* chooses, int chooses_len)
 	        printf(" %s\n", formula_str[i]);
 	    }
     */
-	free(base_n);
+	//free(base_n);
     for(i = 0; i < comp_ptr; i++){
         free(formula_str[i]);
     }
