@@ -2,7 +2,6 @@
 #include<string.h>
 #include<math.h>
 #include<time.h>
-#include<stdlib.h>
 
 typedef struct{
     char* ident;
@@ -17,7 +16,7 @@ typedef struct{
 } Complete;
 
 // number(10) to number(n)(m bit)
-void to_base_n(int number, int n, int m, int * res){
+int to_base_n(int number, int n, int m, int * res){
     int i;
     for(i = 0; i < m ; i++)
         res[i] = 0;
@@ -174,7 +173,7 @@ int check_complete(FuncTab* cands, int cands_len, int* chooses, int chooses_len)
 	        printf(" %s\n", formula_str[i]);
 	    }
     */
-	//free(base_n);
+	free(base_n);
     for(i = 0; i < comp_ptr; i++){
         free(formula_str[i]);
     }
@@ -222,95 +221,114 @@ void print_cands(FuncTab* cands, int cands_len){
     printf("-------------------------------\n");
 }
 
-// check if the choose the funcs has sub complete set
-int has_sub_complete(int * stack, int choose_len, Complete* complete, int complete_len){
-	int i, j;
-	for(i = 0; i < complete_len; i++){
-		// only for number of choose > complete number
-		if(choose_len <= complete[i].len)
-			continue;
-		for(j = 0; j < complete[i].len; j++){
-			if(stack[complete[i].inds[j]] != 1)
-				break;
-		}
-		if(j >= complete[i].len)
+
+int inside_array(int x, int len, int* array){
+	int i;
+	for(i = 0; i < len; i++){
+		if(array[i] == x)
 			return 1;
 	}
 	return 0;
 }
 
+int include_comp(Complete comp, int * cur_choose, int cur_len){
+	int i;
+	for(i = 0; i < comp.len; i++){
+		if(!inside_array(comp.inds[i], cur_len, cur_choose))
+			return 0;
+	}
+	return 1;
+}
+
+// check if the choose the funcs has sub complete set
+int has_sub_complete(int * chooses, int chooses_len, Complete* complete, int complete_len){
+	int i;
+	for(i = 0; i < complete_len; i++){
+		if(chooses_len <= complete[i].len)
+			continue; 
+		if(include_comp(complete[i], chooses, chooses_len))
+			return 1;
+	}
+	return 0;
+}
+
+// calculate members of C(n,m), res as a array
+int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncTab* cands, int cands_len){
+    int* p;
+    int i, j, k = 0, nk = 0;
+	int ind, flag, is_complete;
+    FuncTab tmp_func;
+    FILE *fptr;
+    
+    p = (int *)malloc(sizeof(int) * m);
+    ind = 0;
+    p[ind] = 0;
+    while(1){
+        if(p[ind] >= n){
+            if(ind == 0) break;
+            ind--;
+            p[ind]++;
+        }
+        else if(ind == m - 1){
+            // one result p = c(n,m)
+            // check if their sub set is already complete, if yes jump 
+            flag = has_sub_complete(p, m, complete, complete_len);
+            if(!flag){
+            	// debug info
+            	k++;
+				if(k >= 10000){
+					k = 0;
+					nk++;
+					printf("[%dx10000] complete_len: %d\nchoose: ", nk, complete_len);
+					for(i = 0; i < m; i++){
+						printf("%d ", p[i]);
+					}
+					printf("\n");
+				}
+		
+            	is_complete = check_complete(cands, cands_len, p, m);	
+				if(is_complete){
+					// save the complete result
+					complete[complete_len].len = m;
+					complete[complete_len].inds = (int*)malloc(sizeof(int) * m);
+					fptr = fopen("out.txt", "a");
+					fprintf(fptr, "[%d]", complete_len + 1);
+					for(i = 0; i < m; i++){
+						complete[complete_len].inds[i] = p[i];
+						tmp_func = cands[p[i]];
+						fprintf(fptr, " %s %d ", tmp_func.ident, tmp_func.args_count);
+						for(j = 0; j < tmp_func.bits_count; j++)
+							fprintf(fptr, "%d", tmp_func.bits[j]);
+					}
+					fprintf(fptr, "\n");
+					fclose(fptr);
+					complete_len++; 
+				}
+        	}
+            p[ind]++;
+        }
+        else{
+            ind++;
+            p[ind]=p[ind-1]+1;
+        }
+    }
+    free(p);
+    return complete_len;
+}
+
 int get_all_complete(Complete* complete, FuncTab* cands, int cands_len){
-	int i, j, k = 0, nk = 0, is_complete;
-	int* chooses; 
-	int* stack;
-	int chooses_len = 0;
+	int i;
 	int complete_len = 0;
-	FuncTab tmp_func;
 	FILE * fptr;
 	
 	fptr = fopen("out.txt", "w");
 	fclose(fptr);
 	
-	stack = (int*)malloc(sizeof(int) * cands_len);
-	chooses = (int*)malloc(sizeof(int) * cands_len);
-	// init the stack with 000...000
-	for(i = 0; i < cands_len; i++) stack[i] = 0;
-	while(1){
-		// find the last 0 set it to 1, and for all behind it set to 0, order: 0001, 0010, 0011,...
-		for(i = cands_len - 1; i >= 0; i--){
-			if(stack[i] == 1){
-				stack[i] = 0;
-				chooses_len--;	
-			}
-			else{
-				stack[i] = 1;
-				chooses[chooses_len++] = i;
-				break;
-			}
-		}
-		// for 111...111, break repeat
-		if(i < 0) 
-			break;
-		// print for debug
-		
-		// if some complete function set inside cur choose
-		if(has_sub_complete(stack, chooses_len, complete, complete_len)){
-			continue;
-		}
-		k++;
-		if(k >= 10000){
-			k = 0;
-			nk++;
-			printf("[%dx10000] complete_len: %d\nchoose: ", nk, complete_len);
-			for(i = 0; i < chooses_len; i++){
-				printf("%d ", chooses[i]);
-			}
-			printf("\n");
-		}
-		
-		is_complete = check_complete(cands, cands_len, chooses, chooses_len);	
-		if(is_complete){
-			// save the complete result
-			complete[complete_len].len = chooses_len;
-			complete[complete_len].inds = (int*)malloc(sizeof(int) * chooses_len);
-			fptr = fopen("out.txt", "a");
-			fprintf(fptr, "[%d]", complete_len + 1);
-			for(i = 0; i < chooses_len; i++){
-				complete[complete_len].inds[i] = chooses[i];
-				tmp_func = cands[chooses[i]];
-				fprintf(fptr, " %s %d ", tmp_func.ident, tmp_func.args_count);
-				for(j = 0; j < tmp_func.bits_count; j++)
-					fprintf(fptr, "%d", tmp_func.bits[j]);
-			}
-			fprintf(fptr, "\n");
-			fclose(fptr);
-			complete_len++; 
-			//printf("--------------------------------------\n");
-			
-		}
+	for(i = 1; i <= cands_len; i++){
+		printf("Choose %d from %d\n", i, cands_len);
+		complete_len = get_complete_C_n_m(cands_len, i, complete, complete_len, cands, cands_len);
+		printf("cur complete: %d\n", complete_len);
 	}
-	free(chooses);
-	free(stack);
 
 	return complete_len;
 }
@@ -338,7 +356,7 @@ int main(){
 	int cands_len = 256;
 	
 	FuncTab* cands;
-    Complete complete[1000];
+    Complete complete[50000];
 	clock_t start, end; 
 	
 	start = clock();
