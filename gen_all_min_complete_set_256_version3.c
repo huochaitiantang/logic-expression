@@ -72,7 +72,6 @@ int check_complete(FuncTab* cands, int cands_len, int* chooses, int chooses_len)
     int base_n[10];
     int res, base, cnt, len, add_new_flag;
     int comp_ptr = 0, pre_comp_ptr = 0;   
-    char * formula_str[16];
 	FuncTab tmp_func;
     //printf("Judge if complete set...\n");
     for(i = 0; i < 16; i++)
@@ -82,10 +81,6 @@ int check_complete(FuncTab* cands, int cands_len, int* chooses, int chooses_len)
     comp[comp_ptr++] = 5;
     flag[3] = 1;
     flag[5] = 1;
-    formula_str[0] = (char *)malloc(sizeof(char) * 2);
-    formula_str[1] = (char *)malloc(sizeof(char) * 2);
-    strcpy(formula_str[0], "p");
-    strcpy(formula_str[1], "q");
     //judge
     while(1){
         add_new_flag = 0;
@@ -126,56 +121,15 @@ int check_complete(FuncTab* cands, int cands_len, int* chooses, int chooses_len)
                     comp[comp_ptr] = res;
                     flag[res] = 1;
                     add_new_flag = 1;
-                    // malloc space for new formula
-                    len = strlen(tmp_func.ident) + 1;
-                    for(k = 0; k < m; k++){
-                        len += (strlen(formula_str[base_n[k]]) + 1);
-                    }
-                    formula_str[comp_ptr] = (char *)malloc(sizeof(char) * (len + 1));
-                    // formula: f_name(args1, args2, args3,...)
-                    strcpy(formula_str[comp_ptr], tmp_func.ident);
-                    strcat(formula_str[comp_ptr], "(");
-                    for(k = 0; k < m; k++){
-                        strcat(formula_str[comp_ptr], formula_str[base_n[k]]);
-                        if(k + 1 < m)
-                            strcat(formula_str[comp_ptr], ",");
-                    }
-                    strcat(formula_str[comp_ptr], ")");
-                    comp_ptr++;
-
-                    /*
-                    printf("--j:%d base(%d):\n", j, n);
-                    for(k = 0; k < m; k++){
-                        printf("%d:", base_n[k]);
-                        print_base2(comp[base_n[k]]);
-                        printf("\n");
-                    }
-                    printf("res_ind: ");
-                    for(l = 0; l < 4; l++)
-                        printf("%d", res_ind[l]);
-                    printf("\nadd_new_res:%d\n", res);
-                    */
+					comp_ptr++;
                 }
             }
         }
-
         pre_comp_ptr = n;
         //print_comp(comp, comp_ptr);
         //printf("pre:%d ptr:%d\n", pre_comp_ptr, comp_ptr);
         if(add_new_flag == 0 || comp_ptr >= 16)
             break;
-    }
-    /*
-	if(comp_ptr >= 16)
-		for(i = 0; i < comp_ptr; i++){
-	        printf("[%d] ",i);
-	        print_base2(comp[i]);
-	        printf(" %s\n", formula_str[i]);
-	    }
-    */
-	//free(base_n);
-    for(i = 0; i < comp_ptr; i++){
-        free(formula_str[i]);
     }
     if(comp_ptr >= 16) return 1;
     else return 0;
@@ -231,143 +185,6 @@ int inside_array(int x, int len, int* array){
 	return 0;
 }
 
-int include_comp(Complete comp, int * cur_choose, int cur_len){
-	int i;
-	for(i = 0; i < comp.len; i++){
-		if(!inside_array(comp.inds[i], cur_len, cur_choose))
-			return 0;
-	}
-	return 1;
-}
-
-// check if the choose the funcs has sub complete set
-int has_sub_complete(int * chooses, int chooses_len, Complete* complete, int complete_len){
-	int i;
-	for(i = 0; i < complete_len; i++){
-		if(chooses_len <= complete[i].len)
-			continue; 
-		if(include_comp(complete[i], chooses, chooses_len))
-			return 1;
-	}
-	return 0;
-}
-
-// get the 0,1,2,...m-1, and which complete set it has been in
-void get_index_complete(int m, Complete* complete, int complete_len, Complete* index_complete){
-    int i, j, cnt = 0;
-    for(i = 0; i < m; i++){
-        index_complete[i].len = 0;
-        index_complete[i].inds = NULL;
-    }
-    for(i = 0; i < m; i++){
-        for(j = 0; j < complete_len; j++){
-            if(inside_array(i, complete[j].len, complete[j].inds))
-                cnt++;
-        }
-        if(cnt > 0){
-            index_complete[i].len = cnt;
-            index_complete[i].inds = (int*)malloc(sizeof(int) * cnt);
-            cnt = 0;
-            for(j = 0; j < complete_len; j++){
-                if(inside_array(i, complete[j].len, complete[j].inds))
-                    index_complete[i].inds[cnt++] = j;
-            }
-        }
-    }
-    return;
-}
-
-// calculate members of C(n,m), res as a array
-int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncTab* cands, int cands_len){
-    int* p;
-    int i, j, k = 0, nk = 0;
-	int ind, flag, is_complete;
-    int * complete_flag;
-    Complete* index_complete;
-    FuncTab tmp_func;
-    FILE *fptr;
-   
-    complete_flag = (int*)malloc(sizeof(int) * complete_len);
-    index_complete = (Complete*)malloc(sizeof(Complete) * m);
-    p = (int *)malloc(sizeof(int) * m);
-
-    get_index_complete(m, complete, complete_len, index_complete);
-    for(i = 0; i < complete_len; i++)
-        complete_flag[i] = 0;
-
-    ind = 0;
-    p[ind] = 0;
-    for(i = 0; i < index_complete[0].len; i++)
-        complete_flag[index_complete[0].inds[i]]++;
-    while(1){
-        if(p[ind] >= n){
-            if(ind == 0) break;
-            ind--;
-            p[ind]++;
-            //while(p[ind] < n && not_satisify)
-            //    p[ind]++;
-        }
-        else if(ind == m - 1){
-            // one result p = c(n,m)
-            // check if their sub set is already complete, if yes jump 
-            for(j = 0; j < m ; j++)
-                printf("%d ", p[j]);
-            printf("\n");
-            /*flag = has_sub_complete(p, m, complete, complete_len);
-            if(!flag){
-            	// debug info
-            	k++;
-				if(k >= 10000){
-					k = 0;
-					nk++;
-					printf("[%dx10000] complete_len: %d\nchoose: ", nk, complete_len);
-					for(i = 0; i < m; i++){
-						printf("%d ", p[i]);
-					}
-					printf("\n");
-				}
-		
-            	is_complete = check_complete(cands, cands_len, p, m);	
-				if(is_complete){
-					// save the complete result
-					complete[complete_len].len = m;
-					complete[complete_len].inds = (int*)malloc(sizeof(int) * m);
-					fptr = fopen("out.txt", "a");
-					fprintf(fptr, "[%d]", complete_len + 1);
-					for(i = 0; i < m; i++){
-						complete[complete_len].inds[i] = p[i];
-						tmp_func = cands[p[i]];
-						fprintf(fptr, " %s %d ", tmp_func.ident, tmp_func.args_count);
-						for(j = 0; j < tmp_func.bits_count; j++)
-							fprintf(fptr, "%d", tmp_func.bits[j]);
-					}
-					fprintf(fptr, "\n");
-					fclose(fptr);
-					complete_len++; 
-				}
-        	}*/
-            p[ind]++;
-            //while(p[ind] < n && not_satisify)
-            //    p[ind]++;
-        }
-        else{
-            ind++;
-            p[ind]=p[ind-1]+1;
-            //while(p[ind] < n && not_satisify)
-            //    p[ind]++;
-        }
-    }
-    for(i = 0; i < m; i++){
-        if(index_complete[i].inds != NULL)
-            free(index_complete[i].inds);
-    }
-    free(index_complete);
-    free(complete_flag);
-    free(p);
-    return complete_len;
-}
-
-
 void get_one_complete_set_and_delete(FuncTab* cands, int* cands_len){
     int i, j, tmp, cnt = 0;
     int* flag;
@@ -403,6 +220,169 @@ void get_one_complete_set_and_delete(FuncTab* cands, int* cands_len){
 }
 
 
+// get the 0,1,2,...m-1, and which complete set it has been in
+void get_index_complete(int m, Complete* complete, int complete_len, Complete* index_complete, int* complete_flag){
+    int i, j, cnt;
+    for(i = 0; i < complete_len; i++)
+        complete_flag[i] = 0;
+    for(i = 0; i < m; i++){
+        index_complete[i].len = 0;
+        index_complete[i].inds = NULL;
+    }
+    for(i = 0; i < m; i++){
+        cnt = 0;
+		for(j = 0; j < complete_len; j++){
+            if(inside_array(i, complete[j].len, complete[j].inds))
+                cnt++;
+        }
+        if(cnt > 0){
+            index_complete[i].len = cnt;
+            index_complete[i].inds = (int*)malloc(sizeof(int) * cnt);
+            cnt = 0;
+            for(j = 0; j < complete_len; j++){
+                if(inside_array(i, complete[j].len, complete[j].inds))
+                    index_complete[i].inds[cnt++] = j;
+            }
+        }
+    }
+    return;
+}
+
+// check if a number can add the cur choose
+int can_satisfy(int x, Complete* index_complete, int* complete_flag, Complete* complete){
+	int i, tmp;
+	Complete tmp_comp;
+	tmp_comp = index_complete[x];
+	for(i = 0; i < tmp_comp.len; i++){
+		tmp = tmp_comp.inds[i];
+		if(complete_flag[tmp] + 1 >= complete[tmp].len){
+			//printf("Not Satisfy: %d conflict with:%d\n", x, tmp);
+			return 0;
+		}
+	}
+	for(i = 0; i < tmp_comp.len; i++){
+		tmp = tmp_comp.inds[i];
+		complete_flag[tmp]++;
+	}
+	return 1;
+}
+
+double cal_cnm(int n, int m){
+	double x = 1;
+	int i;
+	for(i = n - m + 1; i <= n; i++)
+		x *= i;
+	for(i = 2; i <= m; i++)
+		x /= i;
+	return x;
+}
+
+
+// calculate members of C(n,m), res as a array
+int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncTab* cands, int cands_len){
+    int* p;
+    int i, j;
+	int ind, is_complete, origin_complete_len;
+    int * complete_flag;
+    double cnm;
+	long long cnt = 0;
+    Complete* index_complete;
+    Complete tmp_comp;
+	FuncTab tmp_func;
+	FILE *fptr;
+    
+    cnm = cal_cnm(n, m);
+    origin_complete_len = complete_len;
+    complete_flag = (int*)malloc(sizeof(int) * complete_len);
+    index_complete = (Complete*)malloc(sizeof(Complete) * n);
+    p = (int *)malloc(sizeof(int) * m);
+
+    // initial with the first number
+    get_index_complete(n, complete, complete_len, index_complete, complete_flag);
+    ind = 0;
+    p[ind] = 0;
+    for(i = 0; i < index_complete[0].len; i++)
+        complete_flag[index_complete[0].inds[i]]++;
+    /*
+	for(i = 0; i < n; i++){
+    	printf("(number)%d: len:%d   ", i, index_complete[i].len);
+		for(j = 0; j < index_complete[i].len; j++){
+    		printf("%d ", index_complete[i].inds[j]);
+    	}
+    	printf("\n");
+    }
+    for(i = 0; i < complete_len; i++){
+    	printf("(complete)%d: flag value:%d\n", i, complete_flag[i]);
+    }*/
+    while(1){
+        if(p[ind] >= n){
+            if(ind == 0) break;
+            // sub the complete_flag
+			ind--;
+            tmp_comp = index_complete[p[ind]];
+            for(i = 0; i < tmp_comp.len; i++){
+            	complete_flag[tmp_comp.inds[i]]--;
+            }
+            p[ind]++;
+            while(p[ind] < n && !can_satisfy(p[ind], index_complete, complete_flag, complete))
+            	p[ind]++;
+        }
+        else if(ind == m - 1){
+            cnt += 1;
+			if(cnt % 10000 == 0){
+				printf("[%lld/%.0lf] complete_len: %d\n[%d]choose: ", cnt, cnm, complete_len, m);
+				for(i = 0; i < m; i++)
+					printf("%d ", p[i]);
+				printf("\n");
+			}
+            is_complete = check_complete(cands, cands_len, p, m);	
+			if(is_complete){
+				// save the complete result
+				complete[complete_len].len = m;
+				complete[complete_len].inds = (int*)malloc(sizeof(int) * m);
+				fptr = fopen("out.txt", "a");
+				fprintf(fptr, "[%d]", complete_len);
+				for(i = 0; i < m; i++){
+					complete[complete_len].inds[i] = p[i];
+					tmp_func = cands[p[i]];
+					fprintf(fptr, " (%d)%s %d ", p[i], tmp_func.ident, tmp_func.args_count);
+					for(j = 0; j < tmp_func.bits_count; j++)
+						fprintf(fptr, "%d", tmp_func.bits[j]);
+				}
+				fprintf(fptr, "\n");
+				fclose(fptr);
+				complete_len++; 
+			}
+ 
+ 			// sub the complete flag
+			tmp_comp = index_complete[p[ind]];
+            for(i = 0; i < tmp_comp.len; i++){
+            	complete_flag[tmp_comp.inds[i]]--;
+            }
+            p[ind]++;
+            while(p[ind] < n && !can_satisfy(p[ind], index_complete, complete_flag, complete))
+            	p[ind]++;
+        }
+        else{
+            ind++;
+            p[ind] = p[ind-1] + 1;
+            while(p[ind] < n && !can_satisfy(p[ind], index_complete, complete_flag, complete))
+            	p[ind]++;
+        }
+    }
+    printf("Choose %d from %d: valid: %lld / %.0lf (ratio = %.3lf)\n", m, n, cnt, cnm, cnt/cnm);
+    
+    // free space
+    for(i = 0; i < n; i++){
+        if(index_complete[i].inds != NULL)
+            free(index_complete[i].inds);
+    }
+    free(index_complete);
+    free(complete_flag);
+    free(p);
+    return complete_len;
+}
+
 
 int get_all_complete(Complete* complete, FuncTab* cands, int* cands_len){
 	int i;
@@ -415,11 +395,10 @@ int get_all_complete(Complete* complete, FuncTab* cands, int* cands_len){
     // find all 1 function complete set and get rid of it
     get_one_complete_set_and_delete(cands, cands_len);
     
-
 	for(i = 2; i < *cands_len; i++){
-		printf("Choose %d from %d\n", i, *cands_len);
+		//printf("Choose %d from %d\n", i, *cands_len);
 		complete_len = get_complete_C_n_m(*cands_len, i, complete, complete_len, cands, *cands_len);
-		printf("cur complete: %d\n", complete_len);
+		//printf("cur complete: %d\n", complete_len);
 	}
 
 	return complete_len;
@@ -445,23 +424,22 @@ void print_complete(Complete* complete, int complete_len, FuncTab* cands){
 int main(){
 	int i;
 	int complete_len;
-	int cands_len = 5;
-    int start_args_cnt = 0;
+	int cands_len = 256;
+    int start_args_cnt = 3;
 	
 	FuncTab* cands;
     Complete complete[10000];
 	clock_t start, end; 
 	
 	start = clock();
-	//freopen("out.txt", "w", stdout); 
+	//freopen("out_log.txt", "w", stdout); 
 	cands = (FuncTab*)malloc(sizeof(FuncTab) * cands_len);
 	init_cands(cands, cands_len, start_args_cnt);
 	print_cands(cands, cands_len);
 
 	complete_len = get_all_complete(complete, cands, &cands_len);
-    print_cands(cands, cands_len);
-
-    print_complete(complete, complete_len, cands);
+    //print_cands(cands, cands_len);
+    //print_complete(complete, complete_len, cands);
 	
 	// free space
 	for(i = 0; i < cands_len; i++){
