@@ -303,17 +303,6 @@ int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncT
     p[ind] = 0;
     for(i = 0; i < index_complete[0].len; i++)
         complete_flag[index_complete[0].inds[i]]++;
-    /*
-	for(i = 0; i < n; i++){
-    	printf("(number)%d: len:%d   ", i, index_complete[i].len);
-		for(j = 0; j < index_complete[i].len; j++){
-    		printf("%d ", index_complete[i].inds[j]);
-    	}
-    	printf("\n");
-    }
-    for(i = 0; i < complete_len; i++){
-    	printf("(complete)%d: flag value:%d\n", i, complete_flag[i]);
-    }*/
     while(1){
         if(p[ind] >= n){
             if(ind == 0) break;
@@ -341,11 +330,11 @@ int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncT
 				complete[complete_len].len = m;
 				complete[complete_len].inds = (int*)malloc(sizeof(int) * m);
 				fptr = fopen("out.txt", "a");
-				fprintf(fptr, "[%d]", complete_len);
+				//fprintf(fptr, "[%d]", complete_len);
 				for(i = 0; i < m; i++){
 					complete[complete_len].inds[i] = p[i];
 					tmp_func = cands[p[i]];
-					fprintf(fptr, " (%d)%s %d ", p[i], tmp_func.ident, tmp_func.args_count);
+					fprintf(fptr, " %s %d ", tmp_func.ident, tmp_func.args_count);
 					for(j = 0; j < tmp_func.bits_count; j++)
 						fprintf(fptr, "%d", tmp_func.bits[j]);
 				}
