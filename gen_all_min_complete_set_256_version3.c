@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<math.h>
 #include<time.h>
@@ -16,7 +17,7 @@ typedef struct{
 } Complete;
 
 // number(10) to number(n)(m bit)
-int to_base_n(int number, int n, int m, int * res){
+void to_base_n(int number, int n, int m, int * res){
     int i;
     for(i = 0; i < m ; i++)
         res[i] = 0;
@@ -279,7 +280,7 @@ double cal_cnm(int n, int m){
 
 
 // calculate members of C(n,m), res as a array
-int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncTab* cands, int cands_len){
+int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncTab* cands, int cands_len, int need_compute){
     int* p;
     int i, j;
 	int ind, is_complete, origin_complete_len;
@@ -318,13 +319,16 @@ int get_complete_C_n_m(int n, int m, Complete* complete, int complete_len, FuncT
         }
         else if(ind == m - 1){
             cnt += 1;
-			if(cnt % 10000 == 0){
+			if(cnt % 100000 == 0){
 				printf("[%lld/%.0lf] complete_len: %d\n[%d]choose: ", cnt, cnm, complete_len, m);
 				for(i = 0; i < m; i++)
 					printf("%d ", p[i]);
 				printf("\n");
 			}
-            is_complete = check_complete(cands, cands_len, p, m);	
+            if(need_compute)
+                is_complete = check_complete(cands, cands_len, p, m);	
+            else
+                is_complete = 0;
 			if(is_complete){
 				// save the complete result
 				complete[complete_len].len = m;
@@ -384,9 +388,16 @@ int get_all_complete(Complete* complete, FuncTab* cands, int* cands_len){
     // find all 1 function complete set and get rid of it
     get_one_complete_set_and_delete(cands, cands_len);
     
-	for(i = 2; i < *cands_len; i++){
+//	for(i = 2; i < *cands_len; i++){
+	for(i = 2; i < 5; i++){
 		//printf("Choose %d from %d\n", i, *cands_len);
-		complete_len = get_complete_C_n_m(*cands_len, i, complete, complete_len, cands, *cands_len);
+		complete_len = get_complete_C_n_m(*cands_len, i, complete, complete_len, cands, *cands_len, 1);
+		//printf("cur complete: %d\n", complete_len);
+	}
+
+	for(i = 5; i < *cands_len; i++){
+		//printf("Choose %d from %d\n", i, *cands_len);
+		complete_len = get_complete_C_n_m(*cands_len, i, complete, complete_len, cands, *cands_len, 0);
 		//printf("cur complete: %d\n", complete_len);
 	}
 
@@ -413,11 +424,11 @@ void print_complete(Complete* complete, int complete_len, FuncTab* cands){
 int main(){
 	int i;
 	int complete_len;
-	int cands_len = 256;
-    int start_args_cnt = 3;
+	int cands_len = 278;
+    int start_args_cnt = 0;
 	
 	FuncTab* cands;
-    Complete complete[10000];
+    Complete complete[20000];
 	clock_t start, end; 
 	
 	start = clock();
