@@ -2,6 +2,15 @@
 #include "common.h"
 #define N 18
 
+
+/*
+	version_0:
+	
+	for 18 functions min complete set
+	slow and memory cost a lot, but for these 18 functions is enough
+	
+*/ 
+
 typedef struct{
 	int len;
 	int* inds;

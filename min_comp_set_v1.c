@@ -4,6 +4,16 @@
 #include<time.h>
 #include<stdlib.h>
 
+/*
+	version_1:
+	
+	init functions automatic
+	try to find min complete set of 256 three-element functions
+	by deep first search in the space of 2^(256)
+	very slow and results generating speed is slow too
+	
+*/ 
+
 typedef struct{
     char* ident;
     int args_count;

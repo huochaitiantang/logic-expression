@@ -3,6 +3,17 @@
 #include<math.h>
 #include<time.h>
 
+/*
+	version_2:
+	
+	serach by order C(256,1),C(256,2),C(256,3),...C(256,256)
+	deep first search in the space of C(256,x)
+	because min complete sets concentrate where x is smaller, like 1,2,3,4
+	and later search if current sets include sub-set that is alreadly and if then jump
+	faster but for C(256,1) to C(256,4) is still cost about half day  
+	
+*/
+
 typedef struct{
     char* ident;
     int args_count;

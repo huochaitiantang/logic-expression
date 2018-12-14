@@ -3,6 +3,45 @@
 #include<math.h>
 #include<time.h>
 
+/*
+	version_3:
+	
+	first remove one-function that is complete
+	still serach by order C(256,1),C(256,2),C(256,3),...C(256,256)
+	but if (2,3) is complete set already,
+	while generating current set C(n,4), 
+	(1,2,3,...) is not ok
+	(2,3,...)is not ok
+	(1,3,...)is ok
+	we just jump some cases while generating set that will be checked if complete
+	this way not C(n,n/2) is the bigest search space 
+
+	for 0,1,2-elements min completes,
+	there are 2 one-function complete set
+	set generating sets count and ratio to C(20,x):
+	C(20,2)£º190 1.0 
+	C(20,3)£º647 0.568
+	C(20,4)£º1685 0.348
+	C(20,5)£º3120 0.201
+	C(20,6)£º4237 0.109
+	C(20,7)£º4368 0.056 (max count)
+	C(20,8)£º3487 0.028
+	C(20,9)£º2166 0.013
+	C(20,10)£º1034 0.006
+	C(20,11)£º367 0.002
+	C(20,12)£º91 0.001
+	C(20,13)-C(20,19)£º15 0.000
+	
+	for 3-element search to C(256,5) and found 6664, 
+	and no 5-functions complete set is found,
+	from C(n,1)-C(n,4) cost about 40 minutes
+	
+	for 0,1,2,3-element search to C(278,4) and fount 11376£¬
+	
+	still slow for search rest space C(278,5),C(278,6),... 
+	
+*/
+
 typedef struct{
     char* ident;
     int args_count;
@@ -413,8 +452,8 @@ void print_complete(Complete* complete, int complete_len, FuncTab* cands){
 int main(){
 	int i;
 	int complete_len;
-	int cands_len = 256;
-    int start_args_cnt = 3;
+	int cands_len = 22;
+    int start_args_cnt = 0;
 	
 	FuncTab* cands;
     Complete complete[10000];
